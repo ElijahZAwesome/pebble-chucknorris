@@ -1,0 +1,17 @@
+{
+  "uuid": "d426a625-01ea-404e-b336-87bb3cc54846",
+  "shortName": "pebble-chucknorris",
+  "longName": "pebble-chucknorris",
+  "companyName": "Gregoire Sage",
+  "versionCode": 1,
+  "versionLabel": "0.0.1",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {
+    "quote": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
