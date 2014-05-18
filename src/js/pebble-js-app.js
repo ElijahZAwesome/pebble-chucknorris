@@ -10,15 +10,11 @@ Pebble.addEventListener("appmessage",function(e) {
 
 function fetchQuote(){
 	var req = new XMLHttpRequest();
-	req.open('GET', 'http://api.icndb.com/jokes/random', true);
+	req.open('GET', 'http://api.icndb.com/jokes/random?escape=javascript', true);
 	req.onload = function(e) {
 		if (req.readyState == 4 && req.status == 200) {
 			var json = JSON.parse(req.responseText);
 			if(json['type'] == 'success'){
-				var joke = json['value']['joke'];
-				console.log("JOKE before : " + joke);
-				joke = joke.split('&quot;').join("'");
-				console.log("JOKE after : " + joke);
 				if(joke.length > 110)
 					fetchQuote();
 				else {
