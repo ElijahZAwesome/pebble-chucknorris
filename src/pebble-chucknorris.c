@@ -3,7 +3,31 @@
 static Window *window;
 static TextLayer *time_layer;
 static TextLayer *quote_layer;
+static TextLayer *border_quote_layer_1;
+static TextLayer *border_quote_layer_2;
 static InverterLayer *inverter_layer;
+
+static BitmapLayer  *chuck_image_layer;
+
+static int          image_nb;
+static GBitmap      *image;
+
+static uint32_t IMAGE_RESOURCES[5] = {
+  RESOURCE_ID_IMAGE_CHUCK_1,
+  RESOURCE_ID_IMAGE_CHUCK_2,
+  RESOURCE_ID_IMAGE_CHUCK_3,
+  RESOURCE_ID_IMAGE_CHUCK_4,
+  RESOURCE_ID_IMAGE_CHUCK_5,
+};
+
+static AppTimer  *timer;
+
+static PropertyAnimation *prop_animation;
+static int out;
+
+// Need to be static because they're used by the system later.
+static char time_text[] = "00:00";
+static char tmp_time_text[] = "00:00";
 
 #define KEY_QUOTE    0
 
@@ -27,6 +51,56 @@ char *translate_error(AppMessageResult result) {
   }
 }
 
+static void animation_started(Animation *animation, void *data) {
+  // text_layer_set_text(text_layer, "Started.");
+}
+
+static void animation_stopped(Animation *animation, bool finished, void *data) {
+  property_animation_destroy(prop_animation);
+  if(out){
+    memcpy(time_text, tmp_time_text, 6);
+    text_layer_set_text(time_layer, time_text);
+    out = 0;
+    Layer *layer = text_layer_get_layer(time_layer);
+    GRect to_rect = GRect(15, -3, 144, 45);
+    prop_animation = property_animation_create_layer_frame(layer, NULL, &to_rect);
+    animation_set_duration((Animation*) prop_animation, 400);
+    animation_set_curve((Animation*) prop_animation, AnimationCurveEaseIn);
+    animation_set_handlers((Animation*) prop_animation, (AnimationHandlers) {
+      .started = (AnimationStartedHandler) animation_started,
+      .stopped = (AnimationStoppedHandler) animation_stopped,
+    }, NULL /* callback data */);
+    animation_schedule((Animation*) prop_animation);
+  }
+}
+
+static void update_timer(void *self) {
+  timer = NULL;
+  image_nb = (image_nb + 1) % 5;
+  gbitmap_destroy(image);
+  image = gbitmap_create_with_resource(IMAGE_RESOURCES[image_nb]);
+  bitmap_layer_set_bitmap(chuck_image_layer, image);
+  layer_mark_dirty(bitmap_layer_get_layer(chuck_image_layer));
+  if(image_nb > 0){
+    timer = app_timer_register(300 /* ms */, (AppTimerCallback) update_timer, NULL);
+  }
+  if(image_nb == 4){
+    Layer *layer = text_layer_get_layer(time_layer);
+
+    GRect to_rect = GRect(144, -3, 144, 45);
+    out = 1;
+
+    prop_animation = property_animation_create_layer_frame(layer, NULL, &to_rect);
+    animation_set_duration((Animation*) prop_animation, 200);
+    animation_set_curve((Animation*) prop_animation, AnimationCurveEaseOut);
+    animation_set_handlers((Animation*) prop_animation, (AnimationHandlers) {
+      .started = (AnimationStartedHandler) animation_started,
+      .stopped = (AnimationStoppedHandler) animation_stopped,
+    }, NULL /* callback data */);
+    animation_schedule((Animation*) prop_animation);
+  }
+}
+
 void getQuote(){
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
@@ -36,8 +110,7 @@ void getQuote(){
 }
 
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
-  // Need to be static because they're used by the system later.
-  static char time_text[] = "00:00";
+  
 
   char *time_format;
 
@@ -52,15 +125,15 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     time_format = "%I:%M";
   }
 
-  strftime(time_text, sizeof(time_text), time_format, tick_time);
+  strftime(tmp_time_text, sizeof(tmp_time_text), time_format, tick_time);
 
   // Kludge to handle lack of non-padded hour format string
   // for twelve hour clock.
   if (!clock_is_24h_style() && (time_text[0] == '0')) {
-    memmove(time_text, &time_text[1], sizeof(time_text) - 1);
+    memmove(tmp_time_text, &tmp_time_text[1], sizeof(tmp_time_text) - 1);
   }
 
-  text_layer_set_text(time_layer, time_text);
+  update_timer(NULL);
 
   if(tick_time->tm_min % 15 == 0){
     getQuote();
@@ -100,12 +173,29 @@ static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  time_layer = text_layer_create(GRect(0, 0, bounds.size.w, 45));
+  chuck_image_layer = bitmap_layer_create(GRect(-10, 3, 61, 40));
+  bitmap_layer_set_alignment(chuck_image_layer, GAlignCenter);
+  layer_add_child(window_layer, bitmap_layer_get_layer(chuck_image_layer));
+
+  image_nb = 0;
+  image = gbitmap_create_with_resource(IMAGE_RESOURCES[image_nb]);
+  bitmap_layer_set_bitmap(chuck_image_layer, image);
+
+
+  time_layer = text_layer_create(GRect(15, -3, 144, 45));
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
+  text_layer_set_background_color(time_layer, GColorClear);
   text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(time_layer));
 
-  quote_layer = text_layer_create(GRect(10, 55, bounds.size.w - 20, bounds.size.h - 45));
+  border_quote_layer_1 = text_layer_create(GRect(0, 50, bounds.size.w, bounds.size.h - 50));
+  text_layer_set_background_color(border_quote_layer_1, GColorBlack);
+  layer_add_child(window_layer, text_layer_get_layer(border_quote_layer_1));
+
+  border_quote_layer_2 = text_layer_create(GRect(2, 52, bounds.size.w - 4, bounds.size.h - 50 - 4));
+  layer_add_child(window_layer, text_layer_get_layer(border_quote_layer_2));
+  
+  quote_layer = text_layer_create(GRect(4, 52, bounds.size.w - 8, bounds.size.h - 50 - 4));
   text_layer_set_font(quote_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(quote_layer, GTextAlignmentLeft);
   layer_add_child(window_layer, text_layer_get_layer(quote_layer));
@@ -117,7 +207,12 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
   text_layer_destroy(time_layer);
   text_layer_destroy(quote_layer);
+  text_layer_destroy(border_quote_layer_1);
+  text_layer_destroy(border_quote_layer_2);
   inverter_layer_destroy(inverter_layer);
+  bitmap_layer_destroy(chuck_image_layer);
+
+  gbitmap_destroy(image);
 }
 
 static void init(void) {

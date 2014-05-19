@@ -12,6 +12,32 @@
     "quote": 0
   },
   "resources": {
-    "media": []
+    "media": [
+      {
+        "type":"png",
+        "name":"IMAGE_CHUCK_1",
+        "file":"images/chuck_sprite-1.png"
+      },
+      {
+        "type":"png",
+        "name":"IMAGE_CHUCK_2",
+        "file":"images/chuck_sprite-2.png"
+      },
+      {
+        "type":"png",
+        "name":"IMAGE_CHUCK_3",
+        "file":"images/chuck_sprite-3.png"
+      },
+      {
+        "type":"png",
+        "name":"IMAGE_CHUCK_4",
+        "file":"images/chuck_sprite-4.png"
+      },
+      {
+        "type":"png",
+        "name":"IMAGE_CHUCK_5",
+        "file":"images/chuck_sprite-5.png"
+      }
+    ]
   }
 }
