@@ -15,6 +15,7 @@ function fetchQuote(){
 		if (req.readyState == 4 && req.status == 200) {
 			var json = JSON.parse(req.responseText);
 			if(json['type'] == 'success'){
+				var joke = json['value']['joke'];
 				if(joke.length > 110)
 					fetchQuote();
 				else {
