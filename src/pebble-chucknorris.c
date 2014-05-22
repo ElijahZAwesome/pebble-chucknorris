@@ -9,9 +9,11 @@ static InverterLayer *inverter_layer;
 static BitmapLayer  *chuck_image_layer;
 
 static int          image_nb;
-static GBitmap      *image;
 
-static uint32_t IMAGE_RESOURCES[5] = {
+#define NB_SPRITE 5
+
+static GBitmap      *images[NB_SPRITE];
+static uint32_t IMAGE_RESOURCES[NB_SPRITE] = {
   RESOURCE_ID_IMAGE_CHUCK_1,
   RESOURCE_ID_IMAGE_CHUCK_2,
   RESOURCE_ID_IMAGE_CHUCK_3,
@@ -75,15 +77,13 @@ static void animation_stopped(Animation *animation, bool finished, void *data) {
 
 static void update_timer(void *self) {
   timer = NULL;
-  image_nb = (image_nb + 1) % 5;
-  gbitmap_destroy(image);
-  image = gbitmap_create_with_resource(IMAGE_RESOURCES[image_nb]);
-  bitmap_layer_set_bitmap(chuck_image_layer, image);
+  image_nb = (image_nb + 1) % NB_SPRITE;
+  bitmap_layer_set_bitmap(chuck_image_layer, images[image_nb]);
   layer_mark_dirty(bitmap_layer_get_layer(chuck_image_layer));
   if(image_nb > 0){
     timer = app_timer_register(300 /* ms */, (AppTimerCallback) update_timer, NULL);
   }
-  if(image_nb == 4){
+  if(image_nb == NB_SPRITE - 1){
     Layer *layer = text_layer_get_layer(time_layer);
 
     GRect to_rect = GRect(144, -3, 144, 45);
@@ -188,9 +188,12 @@ static void window_load(Window *window) {
   bitmap_layer_set_alignment(chuck_image_layer, GAlignCenter);
   layer_add_child(window_layer, bitmap_layer_get_layer(chuck_image_layer));
 
+  for(int i=0; i<NB_SPRITE; i++){
+    images[i] = gbitmap_create_with_resource(IMAGE_RESOURCES[i]);
+  }
+
   image_nb = 0;
-  image = gbitmap_create_with_resource(IMAGE_RESOURCES[image_nb]);
-  bitmap_layer_set_bitmap(chuck_image_layer, image);
+  bitmap_layer_set_bitmap(chuck_image_layer, images[image_nb]);
 
   time_layer = text_layer_create(GRect(15, -3, 144, 45));
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
@@ -209,6 +212,8 @@ static void window_load(Window *window) {
 
   inverter_layer = inverter_layer_create(bounds);
   layer_add_child(window_layer, inverter_layer_get_layer(inverter_layer));
+
+  
 }
 
 static void window_unload(Window *window) {
@@ -218,7 +223,9 @@ static void window_unload(Window *window) {
   inverter_layer_destroy(inverter_layer);
   bitmap_layer_destroy(chuck_image_layer);
 
-  gbitmap_destroy(image);
+  for(int i=0; i<NB_SPRITE; i++){
+    gbitmap_destroy(images[i]);
+  }
 }
 
 static void init(void) {
