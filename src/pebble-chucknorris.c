@@ -110,8 +110,6 @@ void getQuote(){
 }
 
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
-  
-
   char *time_format;
 
   if (!tick_time) {
@@ -151,9 +149,8 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
   Tuple *quote_tuple = dict_find(iter, KEY_QUOTE);
   if (quote_tuple) {
     uint8_t* values = &quote_tuple->value->uint8;
-    memcpy(&quote_text[values[0]*100],values + 2,quote_tuple->length-2);
-    if(values[0] == values[1])
-      text_layer_set_text(quote_layer, quote_text);
+    memcpy(&quote_text,values,quote_tuple->length);
+    text_layer_set_text(quote_layer, quote_text);
   }
 }
 

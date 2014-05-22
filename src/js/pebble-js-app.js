@@ -19,7 +19,7 @@ function fetchQuote(){
 				if(joke.length > 110)
 					fetchQuote();
 				else {
-					sendQuote(joke, 0, Math.round(joke.length / 100));
+					sendQuote(joke);
 				}
 			}
 		} else { 
@@ -29,16 +29,12 @@ function fetchQuote(){
 	req.send(null);
 }
 
-function sendQuote(quote, part, total){
-	var jokepart = quote.substr(part * 100, 100);
-	console.log('part : ' + part + ' ' + total + ' ' + jokepart);
+function sendQuote(quote){
+	console.log('quote : ' +quote);
 	Pebble.sendAppMessage(
-		{'quote':[part, total, jokepart, 0]},
+		{'quote':[quote,0]},
 		function(e) {
 		  console.log("Successfully delivered message with transactionId=" + e.data.transactionId);
-		  if(part < total){
-		  	sendQuote(quote, part + 1, total);
-		  }
 		},
 		function(e) {
 		  console.log("Unable to deliver message with transactionId=" + e.data.transactionId + " Error is: " + e.error.message);
