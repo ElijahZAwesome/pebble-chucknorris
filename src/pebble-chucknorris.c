@@ -3,8 +3,7 @@
 static Window *window;
 static TextLayer *time_layer;
 static TextLayer *quote_layer;
-static TextLayer *border_quote_layer_1;
-static TextLayer *border_quote_layer_2;
+static Layer *border_quote_layer;
 static InverterLayer *inverter_layer;
 
 static BitmapLayer  *chuck_image_layer;
@@ -166,6 +165,21 @@ static void app_message_init() {
   app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
+static void update_border_layer_callback(Layer *layer, GContext* ctx) {
+  GRect bounds = layer_get_bounds(layer);
+
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, bounds, 0, 0);
+
+  bounds.origin.x = bounds.origin.x+2;
+  bounds.origin.y = bounds.origin.y+2;
+  bounds.size.w = bounds.size.w-4;
+  bounds.size.h = bounds.size.h-4;
+
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_fill_rect(ctx, bounds, 0, 0);
+}
+
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
@@ -178,20 +192,16 @@ static void window_load(Window *window) {
   image = gbitmap_create_with_resource(IMAGE_RESOURCES[image_nb]);
   bitmap_layer_set_bitmap(chuck_image_layer, image);
 
-
   time_layer = text_layer_create(GRect(15, -3, 144, 45));
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
   text_layer_set_background_color(time_layer, GColorClear);
   text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(time_layer));
 
-  border_quote_layer_1 = text_layer_create(GRect(0, 50, bounds.size.w, bounds.size.h - 50));
-  text_layer_set_background_color(border_quote_layer_1, GColorBlack);
-  layer_add_child(window_layer, text_layer_get_layer(border_quote_layer_1));
+  border_quote_layer = layer_create(GRect(0, 50, bounds.size.w, bounds.size.h - 50));
+  layer_set_update_proc(border_quote_layer, update_border_layer_callback);
+  layer_add_child(window_layer, border_quote_layer);
 
-  border_quote_layer_2 = text_layer_create(GRect(2, 52, bounds.size.w - 4, bounds.size.h - 50 - 4));
-  layer_add_child(window_layer, text_layer_get_layer(border_quote_layer_2));
-  
   quote_layer = text_layer_create(GRect(4, 52, bounds.size.w - 8, bounds.size.h - 50 - 4));
   text_layer_set_font(quote_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
   text_layer_set_text_alignment(quote_layer, GTextAlignmentLeft);
@@ -204,8 +214,7 @@ static void window_load(Window *window) {
 static void window_unload(Window *window) {
   text_layer_destroy(time_layer);
   text_layer_destroy(quote_layer);
-  text_layer_destroy(border_quote_layer_1);
-  text_layer_destroy(border_quote_layer_2);
+  layer_destroy(border_quote_layer);
   inverter_layer_destroy(inverter_layer);
   bitmap_layer_destroy(chuck_image_layer);
 
